@@ -1,4 +1,4 @@
-I changed your code to Put the connection point morphs into the right position in this code <html><head>
+<html><head>
 <script src="morphic.js"></script>
 </head><body>
 <canvas id="world" width="800" height="600" style="position: absolute;"></canvas>
@@ -34,7 +34,11 @@ window.onload = function() {
     this.acceptsDrops = true;
     this.createColorPalette();
   };
-
+ContainerMorph.prototype.contextMenu = function() {
+let menu = new MenuMorph()
+menu.addItem('A')
+this.add(menu)
+}
   ContainerMorph.prototype.createColorPalette = function() {
     this.palette = {
       background: new Color(240, 240, 245),
@@ -134,6 +138,7 @@ window.onload = function() {
     ctx.font = 'bold 14px Arial';
     ctx.textAlign = 'center';
     ctx.fillText(this.label, this.width() / 2, titleBarHeight / 2 + 5);
+    ctx.clearRect(this.position().x, this.position().y, this.width / 2, this.height / 2)
   };
 
   NodeMorph.prototype.outlinePath = function (ctx, corner, inset) {
@@ -233,7 +238,16 @@ window.onload = function() {
     startPoint = this;
     currentConnection = new ConnectionMorph(startNode, this, null, pos);
     world.add(currentConnection);
+    this.doit()
   };
+  ConnectionPointMorph.prototype.doit = function() {
+  let hint = new TextMorph('Enter input below')
+ hint.setPosition(new Point(this.position().x + 50, this.position().y))
+  this.add(hint)
+  let a = new InputFieldMorph('Input here', false, [], false);
+  a.setPosition(new Point(this.position().x + 67, this.position().y + 25))
+  this.add(a)
+  }
 
   ConnectionPointMorph.prototype.mouseMove = function(pos) {
     if (currentConnection) {
@@ -332,7 +346,7 @@ window.onload = function() {
   };
   
   ConnectionMorph.prototype.step = function() {
-    this.updatePosition();
+    
   };
 
   ConnectionMorph.prototype.destroy = function() {
@@ -598,34 +612,42 @@ window.onload = function() {
   };
 
   PaletteMorph.prototype.addNodeTemplates = function() {
-    var templatePositions = [
-      new Point(10, 10),
-      new Point(10, 160),
-      new Point(10, 310)
+  let i = -1
+    var a = 0; // Initialize vertical offset
+    var blocks = [
+        'Test1',
+        'Test2',
     ];
     
-    templatePositions.forEach((pos, index) => {
-      var template = new NodeMorph(pos, `Template ${index + 1}`);
-      template.setExtent(new Point(160, 140));
-      template.isDraggable = false;
-      template.mouseDownLeft = (pos) => {
-        var newNode = new NodeMorph(pos, `Node ${world.children.length}`);
-        world.add(newNode);
-        newNode.isDraggable = true;
-        newNode.setPosition(pos);
-        world.hand.grabOrigin = {
-          origin: newNode.position(),
-          position: pos
+    blocks.forEach((block) => {
+    i += 1
+        var template = new NodeMorph(new Point(10, a), blocks[i]); // Set position based on 'a'
+        template.setExtent(new Point(160, 140));
+        
+        // Define the mouseDownLeft behavior for the template
+        template.mouseDownLeft = (pos) => {
+            var newNode = new NodeMorph(pos, block);
+            newNode.isDraggable = true;
+            newNode.setPosition(pos);
+            world.add(newNode);
+            
+            world.hand.grabOrigin = {
+                origin: newNode.position(),
+                position: pos
+            };
+            
+            if (world.hand.grab) {
+                world.hand.grab(newNode);
+            } else {
+                console.warn('Hand grab function not available');
+            }
         };
-        if (world.hand.grab) {
-          world.hand.grab(newNode);
-        } else {
-          console.warn('Hand grab function not available');
-        }
-      };
-      this.add(template);
+        
+        this.add(template);
+        a += 150; // Increment vertical offset for the next block
     });
-  };
+};
+
 
 ArrowMorph.prototype = new Morph();
 ArrowMorph.prototype.constructor = ArrowMorph;
@@ -745,7 +767,7 @@ ArrowMorph.prototype.getRenderColor = function () {
       this.oldContentsExtent = contents.extent();
 
       InputFieldMorph.uber.init.call(this);
-      this.color = WHITE;
+      this.color = BLACK;
       this.add(contents);
       this.add(arrow);
       contents.isDraggable = false;
@@ -799,7 +821,7 @@ InputFieldMorph.prototype.render = function (ctx) {
 };
 
   InputFieldMorph.prototype.drawRectBorder = function (ctx) {
-    var shift = this.edge * 0.5,
+    var shift = this.edge * 2, //0.5
         gradient;
 
     if (MorphicPreferences.isFlat && !this.is3D) {return; }
@@ -881,15 +903,6 @@ InputFieldMorph.prototype.render = function (ctx) {
   var container = new ContainerMorph();
   world.add(container);
   
-  // Create nodes
-  var node1 = new NodeMorph(new Point(100, 100), "Node 1");
-  var node2 = new NodeMorph(new Point(350, 100), "Node 2");
-  var node3 = new NodeMorph(new Point(225, 300), "Node 3");
-  node1.setExtent(new Point(160, 140));
-  // Add to container
-  container.add(node1);
-  container.add(node2);
-  container.add(node3);
   
   // Create palette
   var palette = new PaletteMorph(new Point(10, 10), new Point(180, 580));
@@ -908,6 +921,7 @@ InputFieldMorph.prototype.render = function (ctx) {
   );
   container.add(dialogBox);
   dialogBox.isDraggable = true;
+  
   // Custom loop function
   function loop() {
     requestAnimationFrame(loop);
